@@ -1,10 +1,11 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.core.mail import send_mail
 from django.views.generic import ListView
+from django.views.decorators.http import require_POST
 
-from .models import Post
-from .forms import EmailPostForm
+from .models import Post, Comment
+from .forms import EmailPostForm, CommentForm
 
 def post_list(request):
     post_list = Post.published.all()
@@ -27,8 +28,12 @@ def post_detail(request, year, month, day, post):
                              slug=post,
                              publish__year=year,
                              publish__month=month,
-                             publish__day=day)                   
-    return render(request, 'myblog/post/detail.html', {'post': post})
+                             publish__day=day)
+    #Список активных комментариев к этому посту
+    comments = post.comments.filter(active=True)
+    #Форма для комментирования пользователями
+    form = CommentForm()                   
+    return render(request, 'myblog/post/detail.html', {'post': post, 'comments': comments, 'form': form})
 
 class PostListView(ListView):
     """
@@ -42,9 +47,7 @@ class PostListView(ListView):
 def post_share(request, post_id):
     #Извлечь пост по идентификатору id
     post = get_object_or_404(Post, id=post_id, status=Post.Status.PUBLISHED)
-
     sent = False
-
     if request.method == 'POST':
         #Форма была передана на обработку
         form = EmailPostForm(request.POST)
@@ -59,3 +62,19 @@ def post_share(request, post_id):
     else:
         form = EmailPostForm()
     return render(request, 'myblog/post/share.html', {'post': post, 'form': form, 'sent': sent})
+
+
+@require_POST
+def post_comment(request, post_id):
+    post = get_object_or_404(Post, id=post_id, status=Post.Status.PUBLISHED)
+    comment = None
+    #Комментарий был отправлен
+    form = CommentForm(data=request.POST)
+    if form.is_valid():
+        #Создать объект класса Comment, не сохраняя его в базе данных
+        comment = form.save(commit=False)
+        #Назначить пост комментарию
+        comment.post = post
+        #Сохранить комментарий в базе данных
+        comment.save()
+    return render(request, 'myblog/post/comment.html', {'post': post, 'form': form, 'comment' : comment})
