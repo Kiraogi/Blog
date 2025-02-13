@@ -3,6 +3,7 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.core.mail import send_mail
 from django.views.generic import ListView
 from django.views.decorators.http import require_POST
+from django.db.models import Count
 from taggit.models import Tag
 
 from .models import Post, Comment
@@ -37,7 +38,12 @@ def post_detail(request, year, month, day, post):
     #Список активных комментариев к этому посту
     comments = post.comments.filter(active=True)
     #Форма для комментирования пользователями
-    form = CommentForm()                   
+    form = CommentForm()
+
+    #Список схожих постов
+    post_tags_ids = post.tags.values_list('id', flat=True)
+    similar_posts = Post.published.filter(tags__in=post_tags_ids).exclude(id=post.id)
+    similar_posts = similar_posts.annotate(same_tags=Count('tags')).order_by('-same_tags','-publish')[:4]                   
     return render(request, 'myblog/post/detail.html', {'post': post, 'comments': comments, 'form': form})
 
 class PostListView(ListView):
