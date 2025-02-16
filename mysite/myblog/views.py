@@ -4,10 +4,11 @@ from django.core.mail import send_mail
 from django.views.generic import ListView
 from django.views.decorators.http import require_POST
 from django.db.models import Count
+from django.contrib.postgres.search import SearchVector
 from taggit.models import Tag
 
 from .models import Post, Comment
-from .forms import EmailPostForm, CommentForm
+from .forms import EmailPostForm, CommentForm, SearchForm
 
 def post_list(request, tag_slug=None):
     post_list = Post.published.all()
@@ -89,3 +90,19 @@ def post_comment(request, post_id):
         #Сохранить комментарий в базе данных
         comment.save()
     return render(request, 'myblog/post/comment.html', {'post': post, 'form': form, 'comment' : comment})
+
+
+def post_search(request):
+    form = SearchForm()
+    query = None
+    results = []
+
+    if 'query' in request.GET:
+        form = SearchForm(request.GET)
+        if form.is_valid():
+            query = form.cleaned_data['query']
+            results = Post.published.annotate(
+                search=SearchVector('title', 'body'),
+            ).filter(search=query)
+
+    return render(request, 'myblog/post/search.html', {'form': form, 'query': query, 'results': results})
