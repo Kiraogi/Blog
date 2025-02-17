@@ -26,7 +26,7 @@
 
 1. Клонируйте репозиторий:
 ```bash
-git clone https://github.com/your-username/pythonProject.git
+git clone https://github.com/Kiraogi/Blog.git
 ```
 2. Создайте и активируйте виртуальное окружение:
 ```bash
