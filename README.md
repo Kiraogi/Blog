@@ -25,9 +25,9 @@
 ## Установка и запуск
 
 1. Клонируйте репозиторий:
-   ```bash
-   git clone https://github.com/your-username/pythonProject.git
-
+```bash
+git clone https://github.com/your-username/pythonProject.git
+```
 2. Создайте и активируйте виртуальное окружение:
 ```bash
 python -m venv .venv
